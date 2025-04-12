@@ -1,0 +1,2 @@
+DB_USER=teamUp
+DB_PASS=3LM6krrPx2TqF010
