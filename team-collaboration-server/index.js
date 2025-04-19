@@ -48,6 +48,7 @@ async function run() {
     const messageCollection = client.db("collaborationDB").collection("messages");
     const chatsCollection = client.db("collaborationDB").collection("chats");
     const taskCollection = client.db("collaborationDB").collection("task");
+    const projectCollection = client.db("collaborationDB").collection("projects");
 
     // monitoring MongoDB Change Stream
     const changeStream = taskCollection.watch();
@@ -82,6 +83,55 @@ async function run() {
       res.send(result);
     })
 
+    
+    app.delete("/task/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await taskCollection.deleteOne(query);
+      res.send(result)
+    })
+
+    app.get("/task/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await taskCollection.findOne(query);
+      res.send(result)
+    })
+
+    app.put('/tasks/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          condition:'completed'
+        }
+      }
+      const result = await taskCollection.updateOne(filter, updatedDoc);
+      console.log(result);
+      res.send(result)
+    })
+    
+
+    //project related API's
+
+    app.post('/projects', async (req, res) => {
+      const data = req.body;
+      const result = await projectCollection.insertOne(data);
+      res.send(result);
+    })
+    app.get('/projects', async (req, res) => {
+    
+      const result = await projectCollection.find().toArray();
+      res.send(result)
+    })
+
+    app.delete('/projects/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await projectCollection.deleteOne(query);
+      res.send(result)
+    })
+
     // API Route to Add Users
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -98,6 +148,13 @@ async function run() {
     //   const result = await userCollection.find().toArray();
     //   res.send(result);
     // })
+
+    app.get('/user/admin/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await userCollection.findOne(query);
+      res.send(result);
+    })
 
     // messages related api
     app.post("/messages", async (req, res) => {
@@ -171,6 +228,7 @@ async function run() {
           { $set: { status } }
         );
       });
+     
 
       socket.on("disconnect", () => {
         console.log("User disconnected:", socket.id);
