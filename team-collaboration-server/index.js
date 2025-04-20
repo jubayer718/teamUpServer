@@ -132,6 +132,29 @@ async function run() {
       res.send(result)
     })
 
+    app.patch('/projects/approve/:id', async(req,res)=>{
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status:'approved'
+        }
+      }
+      const result = await projectCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    })
+    app.patch('/projects/decline/:id', async(req,res)=>{
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status:'declined'
+        }
+      }
+      const result = await projectCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    })
+
     // API Route to Add Users
     app.post("/users", async (req, res) => {
       const user = req.body;
