@@ -5,6 +5,7 @@ const { Server } = require("socket.io");
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
+
 const app = express()
 const port = process.env.PORT || 5000
 
@@ -41,7 +42,7 @@ async function run() {
     console.log("Connected to MongoDB!");
 
 
-    
+
 
     // Define MongoDB Collection
     const userCollection = client.db("collaborationDB").collection("users");
@@ -67,7 +68,7 @@ async function run() {
 
 
 
-     
+
 
     app.post('/task', async (req, res) => {
       const task = req.body;
@@ -77,13 +78,13 @@ async function run() {
 
     app.get('/allTask/:email', async (req, res) => {
       const email = req.params.email;
-      const query={email:email}
+      const query = { email: email }
       const result = await taskCollection.find(query).toArray();
       // console.log(result);
       res.send(result);
     })
 
-    
+
     app.delete("/task/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -103,14 +104,14 @@ async function run() {
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
         $set: {
-          condition:'completed'
+          condition: 'completed'
         }
       }
       const result = await taskCollection.updateOne(filter, updatedDoc);
       console.log(result);
       res.send(result)
     })
-    
+
 
     //project related API's
 
@@ -120,7 +121,7 @@ async function run() {
       res.send(result);
     })
     app.get('/projects', async (req, res) => {
-    
+
       const result = await projectCollection.find().toArray();
       res.send(result)
     })
@@ -132,18 +133,18 @@ async function run() {
       res.send(result)
     })
 
-    app.patch('/projects/approve/:id', async(req,res)=>{
+    app.patch('/projects/approve/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const updatedDoc = {
         $set: {
-          status:'approved'
+          status: 'approved'
         }
       }
       const result = await projectCollection.updateOne(query, updatedDoc);
       res.send(result);
     })
-    app.put('/projects/decline/:id', async(req,res)=>{
+    app.put('/projects/decline/:id', async (req, res) => {
       const data = req.body;
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -198,20 +199,69 @@ async function run() {
     })
 
     app.get('/allChats', async (req, res) => {
- 
-  const result = await chatsCollection.find().toArray();
-  res.send(result);
-});
 
+      const result = await chatsCollection.find().toArray();
+      res.send(result);
+    });
+
+
+    const userSocketMap = {};
+    const getAllConnectedClients = (roomId) => {
+      return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map((socketId) => {
+        return {
+          socketId,
+          username: userSocketMap[socketId]
+        }
+      })
+    }
     // WebSocket for Real-Time 
     io.on("connection", (socket) => {
       // console.log(`User connected: ${socket.id}`);
 
+      socket.on("join", ({ roomId, username }) => {
+        userSocketMap[socket.id] = username;
+        socket.join(roomId);
+        const clients = getAllConnectedClients(roomId);
+        console.log(clients);
+        clients.forEach(({ socketId }) => {
+          io.to(socketId).emit("joined", {
+            clients,
+            username,
+            socketId: socket.id,
+
+          })
+        })
+      })
+
+      socket.on("code-change", ({ roomId, code }) => {
+        socket.in(roomId).emit("code-change",{code})
+      })
+
+      socket.on("sync-code", ({ socketId, code }) => {
+        io.to(socketId).emit("code-change", { code });
+      })
+      socket.on("disconnecting", () => {
+        const rooms = [...socket.rooms];
+        
+       rooms.forEach((roomId) => {
+         socket.in(roomId).emit("disconnected", {
+           socketId: socket.id,
+           username: userSocketMap[socket.Id]
+         })
+       })
+        delete userSocketMap[socket.id];
+        socket.leave()
+       
+     });
+
+     
+
+
       //one to one chat message functionality
-      socket.on("chat", async(chat) => {
+      socket.on("chat", async (chat) => {
         io.emit("chat", chat);
-      
-     })
+
+      })
 
       //group discussion
 
@@ -253,7 +303,7 @@ async function run() {
           { $set: { status } }
         );
       });
-     
+
 
       socket.on("disconnect", () => {
         console.log("User disconnected:", socket.id);
