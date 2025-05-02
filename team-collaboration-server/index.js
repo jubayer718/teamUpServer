@@ -174,6 +174,17 @@ async function run() {
       const result = await userCollection.find().toArray();
       res.send(result);
     })
+    app.put('/make-admin/:email', async (req, res) => {
+      const email = req.params;
+      const filter = { email: email };
+      const updatedDoc = {
+        $set: {
+          admin: true
+        }
+      }
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    })
 
     app.get('/user/admin/:email', async (req, res) => {
       const email = req.params.email;
