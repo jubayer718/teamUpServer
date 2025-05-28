@@ -174,12 +174,12 @@ async function run() {
       const result = await userCollection.find().toArray();
       res.send(result);
     })
-    app.put('/make-admin/:email', async (req, res) => {
-      const email = req.params;
-      const filter = { email: email };
+    app.put('/make-admin/:id', async (req, res) => {
+      const id = req.params;
+      const filter = {_id: new ObjectId(id)};
       const updatedDoc = {
         $set: {
-          admin: true
+          role: 'admin'
         }
       }
       const result = await userCollection.updateOne(filter, updatedDoc);
