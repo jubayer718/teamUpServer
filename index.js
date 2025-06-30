@@ -176,7 +176,8 @@ async function run() {
 
 
     app.put('/make-admin/:email', async (req, res) => {
-      const email = req.params;
+      const email = req.params.email;
+      console.log("email to make admin",email);
       const filter = { email: email };
       const updatedDoc = {
         $set: {
@@ -184,6 +185,13 @@ async function run() {
         }
       }
       const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    })
+
+    app.delete("/remove-user/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await userCollection.deleteOne(query);
       res.send(result);
     })
 
